@@ -9,6 +9,7 @@ from collections import defaultdict
 from functools import wraps
 from django.db import models
 from django.utils.functional import curry
+from django.utils import six
 from django_fsm.signals import pre_transition, post_transition
 
 
@@ -58,7 +59,7 @@ class FSMMeta(object):
             elif found > 1:
                 raise TypeError("More than one FSMField found in model")
             self.field = fields[0]
-        elif isinstance(self.field, str):
+        elif isinstance(self.field, six.string_types):
             self.field, _, _, _ = instance._meta.get_field_by_name(self.field)
         return self.field
 
@@ -93,9 +94,14 @@ class FSMMeta(object):
         if state not in self.conditions:
             state = '*'
 
-        if all(map(lambda f: f(instance), self.conditions[state])):
-                return True
-        return False
+        conditions = []
+        for condition in self.conditions[state]:
+            if isinstance(condition, six.string_types):
+                conditions.append(getattr(instance, condition)())
+            else:
+                conditions.append(condition(instance))
+
+        return all(conditions)
 
     def to_next_state(self, instance):
         """
@@ -139,11 +145,11 @@ def transition(field=None, source='*', target=None, save=False, conditions=[]):
                     source=source_state,
                     target=meta.next_state(instance))
 
-                result = func(instance, *args, **kwargs)
-
                 meta.to_next_state(instance)
                 if save:
                     instance.save()
+
+                result = func(instance, *args, **kwargs)
 
                 post_transition.send(
                     sender=instance.__class__,
@@ -161,7 +167,7 @@ def transition(field=None, source='*', target=None, save=False, conditions=[]):
         else:
             func._django_fsm.add_transition(source, target, conditions)
 
-        if field and not isinstance(field, str):
+        if field and not isinstance(field, six.string_types):
             field.transitions.append(_change_state)
         return _change_state
 
