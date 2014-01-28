@@ -114,7 +114,8 @@ class FSMMeta(object):
             instance.__dict__[field_name] = state
 
 
-def transition(field=None, source='*', target=None, save=False, conditions=[]):
+def transition(field=None, source='*', target=None, save=False, conditions=[],
+               verbose_name=None, permission=None):
     """
     Method decorator for mark allowed transition
 
@@ -170,6 +171,9 @@ def transition(field=None, source='*', target=None, save=False, conditions=[]):
         if field and not isinstance(field, six.string_types):
             field.transitions.append(_change_state)
         return _change_state
+
+    inner_transition.verbose_name = verbose_name
+    inner_transition.permission = permission
 
     return inner_transition
 
