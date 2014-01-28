@@ -170,10 +170,10 @@ def transition(field=None, source='*', target=None, save=False, conditions=[],
 
         if field and not isinstance(field, six.string_types):
             field.transitions.append(_change_state)
-        return _change_state
 
-    inner_transition.verbose_name = verbose_name
-    inner_transition.permission = permission
+        _change_state.verbose_name = verbose_name
+        _change_state.permission = permission
+        return _change_state
 
     return inner_transition
 
